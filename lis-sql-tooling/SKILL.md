@@ -16,7 +16,7 @@ CLI + Agent Skills).
 - ✅ Конфиг: `~/.config/sqls/config.yml` (600) — живой коннект `talks` (<адрес из окружения>, PostgreSQL 16.15, проверен psql и LSP-хендшейком), закомментированный шаблон для MSSQL. Секция `connections:` —
   список `alias`/`driver`/`dataSourceName` (+ sshConfig). `dataSourceName` приоритетнее
   отдельных полей (user/passwd/host/port/dbName).
-  - PG: `dataSourceName: "host=10.0.1.x port=5432 user=USER password=PASS dbname=DB sslmode=disable"`
+  - PG: `dataSourceName: "host=адрес из окружения port=5432 user=USER password=PASS dbname=DB sslmode=disable"`
   - MSSQL: `dataSourceName: "sqlserver://USER:PASS@host:1433?database=DB"`
   - drivers: `postgresql`, `mssql`, `mysql`, `sqlite3`, `h2`
 - Режим работы: LSP-сервер по stdio (`sqls` без аргументов).
