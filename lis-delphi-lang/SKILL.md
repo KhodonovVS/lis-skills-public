@@ -1,5 +1,5 @@
 ---
-name: delphi-ai
+name: lis-delphi-lang
 description: "Use when writing, reviewing or fixing Delphi/Object Pascal в нашем контуре: Delphi 10.3 (Studio 20.0), VCL + DevExpress, FireDAC, DFM-only. Проверка API по исходникам 20.0, стиль, память, строки, исключения, generics/RTTI, потоки."
 ---
 

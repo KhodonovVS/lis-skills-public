@@ -1,5 +1,5 @@
 ---
-name: sql-db-agent-tooling
+name: lis-sql-tooling
 description: Use when SQL для Oracle/MSSQL/PostgreSQL — sqls, pythia.
 ---
 

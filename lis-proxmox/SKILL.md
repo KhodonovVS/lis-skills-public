@@ -1,5 +1,5 @@
 ---
-name: proxmox-management
+name: lis-proxmox
 description: "Manage Proxmox VE: LXC containers and QEMU VMs via REST API — auth, lifecycle, networking, backup/restore, clone, and diagnosis."
 version: 1.0.0
 author: Hermes Agent (consolidated)

@@ -1,5 +1,5 @@
 ---
-name: delphi-development
+name: lis-delphi-build
 description: "Use when работа с Delphi/RAD Studio: код, сборка, кодировки, агенты."
 version: 1.1.0
 author: Hermes Agent

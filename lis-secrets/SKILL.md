@@ -1,5 +1,5 @@
 ---
-name: password-vault
+name: lis-secrets
 description: "Use when storing/retrieving passwords — pass + Vaultwarden BOSS."
 version: 1.0.0
 author: VLAS

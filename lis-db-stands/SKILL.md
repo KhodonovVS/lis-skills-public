@@ -1,5 +1,5 @@
 ---
-name: db-lab-stands
+name: lis-db-stands
 description: "Use when building database VMs (MSSQL/Oracle/PG)."
 version: 1.0.0
 author: Hermes Agent (curator)

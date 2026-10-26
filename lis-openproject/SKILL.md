@@ -1,5 +1,5 @@
 ---
-name: openproject
+name: lis-openproject
 description: "Use when работа с OpenProject (<домен из окружения>)."
 ---
 

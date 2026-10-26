@@ -1,5 +1,5 @@
 ---
-name: infra-as-code-versioning
+name: lis-iac
 description: "Use when версионируешь инфраструктуру и скрипты в git."
 version: 1.0.0
 author: Hermes Agent

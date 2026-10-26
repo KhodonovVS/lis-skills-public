@@ -1,5 +1,5 @@
 ---
-name: delphi-code-review
+name: lis-delphi-review
 description: "Use when ревью или разбор чужого Delphi-кода: утечки, double free, запахи, статический анализ, AV/access violation, утечки датасетов, транзакции FireDAC."
 ---
 
