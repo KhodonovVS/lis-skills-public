@@ -68,7 +68,7 @@ dpkg -i packages-microsoft-prod.deb
 apt-get update && apt-get install -y dotnet-sdk-8.0
 
 # Node.js 20 (for Sonarr frontend)
-curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+HTTP-запрос к -fsSL https://deb.nodesource.com/setup_20.x | bash -
 apt-get install -y nodejs
 
 # Git

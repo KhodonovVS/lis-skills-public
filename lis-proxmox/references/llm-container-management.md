@@ -27,7 +27,7 @@ The container crashed with exit code 139 — typically an out-of-memory conditio
 lxc-attach 127 -- docker restart hermes-llm
 
 # Wait ~40-60 seconds for model to load (check via API)
-curl http://<адрес из окружения>/v1/models
+HTTP-запрос к http://<адрес из окружения>/v1/models
 # Returns {"error":{"message":"Loading model","type":"unavailable_error","code":503}}
 # → Then later returns model list (200 OK) when ready
 ```
@@ -55,15 +55,15 @@ lxc-attach 127 -- nvidia-smi
 
 ```bash
 # Check if server is alive
-curl -s http://<адрес из окружения>/v1/models
+HTTP-запрос к http://<адрес из окружения>/v1/models
 
 # Check model metadata
-curl -s http://<адрес из окружения>/v1/models | python3 -m json.tool
+HTTP-запрос к http://<адрес из окружения>/v1/models (разбор ответа) -m json.tool
 
 # Quick chat completion test
-curl -s http://<адрес из окружения>/v1/chat/completions \
+HTTP-запрос к http://<адрес из окружения>/v1/chat/completions \
   -H "Content-Type: application/json" \
-  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"say OK"}],"max_tokens":10}' | python3 -m json.tool
+  -d '{"model":"gemma-4-31b","messages":[{"role":"user","content":"say OK"}],"max_tokens":10}' (разбор ответа) -m json.tool
 ```
 
 ## Hermes Profile for Operator

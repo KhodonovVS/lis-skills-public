@@ -41,7 +41,7 @@ Instead of restoring from backup, **clone a working VM**:
 ```bash
 # 1. Delete broken VM 130 (wait for lock timeout first)
 # 2. Clone VM 129 → 130
-curl -sk -X POST \
+HTTP-запрос к -X POST \
   -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<адрес из окружения>/api2/json/nodes/dbase/qemu/129/clone" \
   -d "newid=130&name=ORAWIN&full=1&storage=local"
@@ -81,13 +81,13 @@ qmrestore | VM130 | can't lock file ... - got timeout
 
 1. Check config for `efidisk0` and `scsi1`:
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config"
 ```
 2. Verify `bios: ovmf` (UEFI) and `boot: order=scsi0;...` (disk first)
 3. Check disk images exist:
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/storage/local/content?content=images&vmid={vmid}"
 ```
 

@@ -14,11 +14,10 @@ Unified skill for Proxmox VE operations: LXC containers and QEMU virtual machine
 ## Authentication (shared)
 
 ```bash
-RESPONSE=$(curl -sk -X POST "https://<proxmox_ip>:8006/api2/json/access/ticket" \
-  -d "username=root@pam&password=<password>")
+RESPONSE=<результат команды>
 
-TICKET=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
-CSRF=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
+TICKET=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
+CSRF=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
 ```
 
 All subsequent API calls need:
@@ -121,7 +120,7 @@ lxc-attach 127 -- ss -tlnp
 `qm disk move <vmid> <disk> <target-storage> --delete 1` — гость работает; в конце пауза 1–2 с (для сетевых VM/шлюзов — предупредить). Скорость на локальных SSD: 30–36 ГиБ ≈ 50 с.
 **`--delete 0` = источник остаётся (безопасный дефолт); `--delete 1` удаляет источник ТОЛЬКО после успешного копирования.**
 
-**Перенос rootfs КОНТЕЙНЕРА на другой storage:** `pct move-volume <ctid> rootfs <storage> --delete 1` — но, в отличие от VM-диска, rootfs CT переносится только на остановленном контейнере: `pct stop <ctid> --skiplock` → `pct move-volume …` → `pct start <ctid>`. Скорость на локальных SSD/NVMe ~130 МБ/с (22 ГБ ≈ 3 мин). После старта сервис с большим индексом/базой поднимается 60–90 с (читает данные с диска) и всё это время порт не слушается — готовность брать по строке в журнале сервиса, а не по первому curl (иначе легко принять норму за поломку).
+**Перенос rootfs КОНТЕЙНЕРА на другой storage:** `pct move-volume <ctid> rootfs <storage> --delete 1` — но, в отличие от VM-диска, rootfs CT переносится только на остановленном контейнере: `pct stop <ctid> --skiplock` → `pct move-volume …` → `pct start <ctid>`. Скорость на локальных SSD/NVMe ~130 МБ/с (22 ГБ ≈ 3 мин). После старта сервис с большим индексом/базой поднимается 60–90 с (читает данные с диска) и всё это время порт не слушается — готовность брать по строке в журнале сервиса, а не по первому HTTP-запрос к (иначе легко принять норму за поломку).
 
 **Грабли нумерации дисков:** `qm list` колонка BOOTDISK показывает первый диск по boot-order (может быть CD-ROM/ISO!) — реальные диски смотреть `qm config <id> | grep -E '^(ide|scsi|virtio|sata|efidisk|tpmstate)[0-9]+:'`; регекс БЕЗ `[0-9]+` не поймает `ide1:` (grep `^(...|ide|...):` = ложная пустота).
 **`unusedN:`** в конфиге = отвязанный диск с недоступного стораджа — не мешает, разобрать отдельно.
@@ -150,7 +149,7 @@ qm  set <vmid> --startup order=10,up=40      # виртуалка
 **Аудит перед назначением — кто вообще не встанет:**
 
 ```bash
-for id in $(pct list | awk 'NR>1{print $1}'); do c=$(pct config $id);
+for id in <результат команды> 'NR>1{print $1}'); do c=<результат команды>;
   echo "$c" | grep -q 'onboot: 1' || continue
   echo "$c" | grep -q '^startup:' || echo "CT$id без startup"
 done

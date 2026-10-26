@@ -23,12 +23,10 @@ All Proxmox API calls need a ticket (auth cookie) and CSRF token:
 
 ```bash
 # Get ticket + CSRF token in one step
-RESPONSE=$(curl -sk -X POST "https://<proxmox_ip>:8006/api2/json/access/ticket" \
-  -d "username=root@pam" \
-  -d "password=<password>")
+RESPONSE=<результат команды>
 
-TICKET=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
-CSRF=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
+TICKET=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
+CSRF=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
 ```
 
 Use `-k` (insecure TLS) because Proxmox uses self-signed certs. All subsequent API calls need:
@@ -55,7 +53,7 @@ Base: https://<proxmox_ip>:8006/api2/json
 ### Listing containers
 
 ```bash
-curl -sk \
+HTTP-запрос к \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc"
@@ -66,7 +64,7 @@ Returns array of containers with `vmid`, `name`, `status`, `maxdisk`, `uptime`, 
 ### Getting container details
 
 ```bash
-curl -sk \
+HTTP-запрос к \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc/<vmid>"
@@ -122,17 +120,17 @@ Two methods: REST API (preferred for automation) or `pct create` via SSH.
 List existing containers and pick the first gap, or use the next-available API:
 
 ```bash
-curl -sk \
+HTTP-запрос к \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc" \
-  | python3 -c "import sys,json; ids=[c['vmid'] for c in json.load(sys.stdin)['data']]; print(f'Max: {max(ids)}, Next: {max(ids)+1}')"
+  (разбор ответа) -c "import sys,json; ids=[c['vmid'] for c in json.load(sys.stdin)['data']]; print(f'Max: {max(ids)}, Next: {max(ids)+1}')"
 ```
 
 Proxmox API also provides `/nodes/{node}/lxc?nextid=1`:
 
 ```bash
-curl -sk \
+HTTP-запрос к \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/nextid"
@@ -143,7 +141,7 @@ curl -sk \
 This is the preferred method for scripting — it returns a UPID for task tracking.
 
 ```bash
-curl -sk -X POST \
+HTTP-запрос к -X POST \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   -H "Content-Type: application/json" \
@@ -242,7 +240,7 @@ sshpass -p '<pass>' ssh root@<proxmox_ip> "pct exec <vmid> -- ip -4 addr show et
 
 Or via Proxmox API:
 ```bash
-curl -sk \
+HTTP-запрос к \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc/<vmid>/interfaces"
@@ -258,7 +256,7 @@ To change IP, gateway, or switch between DHCP and static, you MUST stop the cont
 
 ```bash
 # 1. Stop container
-curl -sk -X POST \
+HTTP-запрос к -X POST \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc/<vmid>/status/stop"
@@ -266,7 +264,7 @@ curl -sk -X POST \
 # Wait for stop (check with GET /nodes/{node}/lxc/{vmid}/status/current)
 
 # 2. Update network config
-curl -sk -X PUT \
+HTTP-запрос к -X PUT \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   -H "Content-Type: application/json" \
@@ -274,7 +272,7 @@ curl -sk -X PUT \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc/<vmid>/config"
 
 # 3. Start container
-curl -sk -X POST \
+HTTP-запрос к -X POST \
   -H "CSRFPreventionToken: $CSRF" \
   -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/<node>/lxc/<vmid>/status/start"
@@ -356,7 +354,7 @@ The `timeout` command on macOS does not support `-v` (verbose). Use `timeout 3 b
 After any container config change:
 1. Check the container started: `GET /api2/json/nodes/<node>/lxc/<vmid>/status/current` → look for `"status":"running"`
 2. Test TCP connectivity: `timeout 3 bash -c 'echo >/dev/tcp/<ip>/<port>' && echo "OK" || echo "DEAD"`
-3. Verify the service health endpoint: `curl -s --connect-timeout 5 http://<ip>:<port>/`
+3. Verify the service health endpoint: `HTTP-запрос к --connect-timeout 5 http://<ip>:<port>/`
 
 ## References
 

@@ -22,11 +22,10 @@ Manage Proxmox QEMU virtual machines through the REST API. Covers VM lifecycle (
 Same ticket + CSRF pattern as the LXC skill. **Always get a fresh ticket for each batch of API calls** — tickets expire and cached cookies can go stale:
 
 ```bash
-RESPONSE=$(curl -sk -d 'username=root@pam&password=<password>' \
-  "https://<proxmox_ip>:8006/api2/json/access/ticket")
+RESPONSE=<результат команды>
 
-TICKET=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
-CSRF=$(echo "$RESPONSE" | python3 -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
+TICKET=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['ticket'])")
+CSRF=<результат команды> -c "import sys,json; print(json.load(sys.stdin)['data']['CSRFPreventionToken'])")
 ```
 
 All subsequent calls need:
@@ -34,7 +33,7 @@ All subsequent calls need:
 -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF"
 ```
 
-**Pitfall: `curl -c` cookiejar.** Do NOT use `curl -c /tmp/cookies.txt` to persist the session — when the ticket response is piped to Python for parsing, the cookie file is written but ends up empty or stale. Always capture `$TICKET` into a shell variable and pass it inline with `-H "Cookie: PVEAuthCookie=$TICKET"`.
+**Pitfall: `HTTP-запрос к -c` cookiejar.** Do NOT use `HTTP-запрос к -c /tmp/cookies.txt` to persist the session — when the ticket response is piped to Python for parsing, the cookie file is written but ends up empty or stale. Always capture `$TICKET` into a shell variable and pass it inline with `-H "Cookie: PVEAuthCookie=$TICKET"`.
 
 **Pitfall: API token may be invalid.** If `PVEAPIToken=...` returns 401, fall back to cookie-based auth with `root@pam` credentials. API tokens can expire or be misconfigured; password auth is more reliable.
 
@@ -58,9 +57,9 @@ Base: `https://<proxmox_ip>:8006/api2/json`
 ### Listing VMs
 
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu" \
-  | python3 -c "
+  (разбор ответа) -c "
 import sys,json
 for vm in json.load(sys.stdin)['data']:
     print(f\"  VM {vm['vmid']}: {vm['status']} | name={vm.get('name','?')} | uptime={vm.get('uptime',0)}\")"
@@ -71,7 +70,7 @@ Key fields per VM: `vmid`, `status` (running/stopped), `name`, `uptime`, `maxdis
 ### Getting VM config
 
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config"
 ```
 
@@ -103,19 +102,19 @@ When a `qmrestore` operation fails (e.g. PBS restore error), it often leaves beh
 
 ```bash
 # 1. Check if lock exists
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config" \
-  | python3 -c "import sys,json; d=json.load(sys.stdin)['data']; print('LOCKED: '+d.get('lock','none'))"
+  (разбор ответа) -c "import sys,json; d=json.load(sys.stdin)['data']; print('LOCKED: '+d.get('lock','none'))"
 
 # 2. Wait for lock timeout (~60-90 seconds). Poll every 10s.
 #    DO NOT retry operations while lock is active — they accumulate failed tasks.
 
 # 3. Once lock clears, DELETE the zombie VM:
-curl -sk -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}"
 
 # 4. Verify config is gone (HTTP 500 "does not exist" is success here)
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config" -w "\nHTTP: %{http_code}"
 ```
 
@@ -131,9 +130,9 @@ Be careful with multi-node clusters (e.g. pve + dbase). Backups may live on **an
 
 ```bash
 for STORAGE in local pbs-main; do
-  curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+  HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
     "https://<proxmox_ip>:8006/api2/json/nodes/{node}/storage/$STORAGE/content?content=backup" \
-    | python3 -c "
+    (разбор ответа) -c "
 import sys,json
 for b in json.load(sys.stdin).get('data',[]):
     if b.get('vmid') == {vmid}:
@@ -146,7 +145,7 @@ Backup volid format: `pbs-main:backup/vm/{vmid}/{timestamp}Z`
 ### Restoring a VM from PBS backup
 
 ```bash
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu" \
   -d "vmid={vmid}&archive=pbs-main:backup/vm/{vmid}/{timestamp}Z&storage=local&start=0"
 ```
@@ -170,25 +169,25 @@ curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CS
 
 ```bash
 # Check tasks
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/tasks?typefilter=qmrestore&limit=5" \
-  | python3 -c "import sys,json
+  (разбор ответа) -c "import sys,json
 for t in json.load(sys.stdin)['data']:
     print(f\"  VM{t.get('id','?')} | status={t.get('status','?')[:60]}\")"
 
 # Check config has actual keys (not just lock+memory)
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config" \
-  | python3 -c "import sys,json
+  (разбор ответа) -c "import sys,json
 data = json.load(sys.stdin)['data']
 if 'scsi1' in data: print('Disk attached - OK')
 elif len(data) <= 3: print('SKELETON CONFIG - restore failed!')
 "
 
 # Check actual disk images on storage
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/storage/local/content?content=images" \
-  | python3 -c "import sys,json
+  (разбор ответа) -c "import sys,json
 for img in json.load(sys.stdin)['data']:
     if img.get('vmid') == {vmid}:
         print(f\"  {img['volid']} — {img['size']} bytes\")"
@@ -198,12 +197,12 @@ for img in json.load(sys.stdin)['data']:
 
 ```bash
 # Full clone (independent disks, VM must be STOPPED)
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{source_vmid}/clone" \
   -d "newid={target_vmid}&name={name}&full=1&storage=local"
 
 # Linked clone (shared base disks, source may be running)
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{source_vmid}/clone" \
   -d "newid={target_vmid}&name={name}&storage=local"
 ```
@@ -225,9 +224,9 @@ curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CS
 ### Listing disk images for a VM
 
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/storage/local/content?content=images&vmid={vmid}" \
-  | python3 -c "
+  (разбор ответа) -c "
 import sys,json
 for img in json.load(sys.stdin)['data']:
     print(f\"  {img['volid']} | size={img['size']} | format={img['format']}\")"
@@ -248,13 +247,13 @@ When a Windows VM shows "no bootable disk" or hangs at UEFI shell:
 
 ```bash
 # Stop
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/status/stop"
 
 sleep 10  # wait for graceful shutdown
 
 # Start
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/status/start"
 ```
 
@@ -264,11 +263,11 @@ Returns a UPID. Check status afterward with `GET /nodes/{node}/qemu`.
 
 ```bash
 # Delete VM (keep disks as unreferenced)
-curl -sk -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}"
 
 # Delete VM + destroy all disks + purge from backups
-curl -sk -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}?destroy-unreferenced-disks=1&purge=1"
 ```
 
@@ -277,7 +276,7 @@ curl -sk -X DELETE -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $
 When a restore creates a skeleton config or you need to reconstruct a VM from existing disks, PUT a full config:
 
 ```bash
-curl -sk -X PUT -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X PUT -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   -H "Content-Type: application/json" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/qemu/{vmid}/config" \
   -d '{
@@ -310,14 +309,14 @@ All state-changing operations return a UPID (task ID). Monitor with:
 
 ```bash
 # Recent tasks for a specific VM
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/tasks?vmid={vmid}&limit=5" \
-  | python3 -c "import sys,json
+  (разбор ответа) -c "import sys,json
 for t in json.load(sys.stdin)['data']:
     print(f\"  {t['type']} | status={t['status'][:60]}\")"
 
 # All recent tasks (last N)
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/tasks?limit=10"
 ```
 
@@ -330,7 +329,7 @@ Adding and managing storage backends (NFS, local, etc.) through the Proxmox API.
 **CRITICAL: use `POST /storage` (global endpoint), NOT `POST /nodes/{node}/storage`** — the node-scoped endpoint returns HTTP 501 "not implemented".
 
 ```bash
-curl -sk -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
+HTTP-запрос к -X POST -H "Cookie: PVEAuthCookie=$TICKET" -H "CSRFPreventionToken: $CSRF" \
   "https://<proxmox_ip>:8006/api2/json/storage" \
   -d "type=nfs&server=<адрес из окружения>&export=/mnt/STORAGE/ISOTEMPLATE&content=iso,vztmpl&nodes=dbase"
 ```
@@ -346,7 +345,7 @@ Parameters:
 ### Checking storage status
 
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/nodes/{node}/storage/{storage_name}/status"
 ```
 
@@ -365,9 +364,9 @@ Returns: `active: 0|1`, `enabled: 0|1`, `total`, `avail`, `used`, `content` (com
 ### Listing configured storages
 
 ```bash
-curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
   "https://<proxmox_ip>:8006/api2/json/storage" \
-  | python3 -c "import sys,json
+  (разбор ответа) -c "import sys,json
 for s in json.load(sys.stdin)['data']:
     print(f\"  {s['storage']:20s} type={s['type']:6s} enabled={s.get('enable',1)} content={s.get('content','')}\")"
 ```
@@ -406,9 +405,9 @@ Proxmox clusters span multiple nodes. A VM may live on a different node than exp
 When a VM is not found on the expected node, check other nodes:
 ```bash
 for NODE in pve dbase; do
-  curl -sk -H "Cookie: PVEAuthCookie=$TICKET" \
+  HTTP-запрос к -H "Cookie: PVEAuthCookie=$TICKET" \
     "https://<proxmox_ip>:8006/api2/json/nodes/$NODE/qemu" \
-    | python3 -c "import sys,json
+    (разбор ответа) -c "import sys,json
 for vm in json.load(sys.stdin).get('data',[]):
     if vm['vmid'] == {vmid}:
         print(f'Found on node: $NODE')"

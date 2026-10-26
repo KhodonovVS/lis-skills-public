@@ -96,7 +96,7 @@ ssh root@pve "rm -f /run/lock/lxc/pve-config-<CTID>.lock && pct start <CTID>"
 ```bash
 # Inside the container
 ssh root@pve "pct exec <CTID> -- bash -c '
-  curl -fsSL https://get.docker.com -o /tmp/get-docker.sh
+  HTTP-запрос к -fsSL https://get.docker.com -o /tmp/get-docker.sh
   sh /tmp/get-docker.sh
 '"
 
@@ -117,7 +117,7 @@ ssh root@pve "pct exec <CTID> -- docker --version"
 # Generate on PVE host, pass into container
 ssh root@pve "openssl rand -hex 64 > /tmp/app_key.txt"
 # Then read and use in docker run
-KEY=$(cat /tmp/app_key.txt)
+KEY=<результат команды>
 ssh root@pve "pct exec <CTID> -- docker run -d ... -e SECRET_KEY_BASE=*** ..."
 ```
 
@@ -129,7 +129,7 @@ ssh root@pve "pct exec <CTID> -- docker run -d -e SECRET_KEY_BASE=*** ..."
 
 # RIGHT — write key to file, read via SSH
 ssh root@pve "openssl rand -hex 64 > /tmp/app_key.txt"
-ssh root@pve 'KEY=$(cat /tmp/app_key.txt) && pct exec <CTID> -- docker run -d -e SECRET_KEY_BASE="$KEY" ...'
+ssh root@pve 'KEY=<результат команды> && pct exec <CTID> -- docker run -d -e SECRET_KEY_BASE="$KEY" ...'
 ```
 
 ### Common docker run patterns
@@ -165,13 +165,13 @@ sleep 30
 ssh root@pve "pct exec <CTID> -- docker ps --filter name=<app> --format '{{.Status}}'"
 
 # Check application health
-ssh root@pve "pct exec <CTID> -- curl -s -o /dev/null -w '%{http_code}' -H 'Host: <ip_or_hostname>' http://localhost/"
+ssh root@pve "pct exec <CTID> -- HTTP-запрос к -o /dev/null -w '%{http_code}' -H 'Host: <ip_or_hostname>' http://localhost/"
 
 # Test from outside
-curl -sL -o /dev/null -w '%{http_code}' -H 'Host: <ip_or_hostname>' http://<container_ip>/
+HTTP-запрос к -sL -o /dev/null -w '%{http_code}' -H 'Host: <ip_or_hostname>' http://<container_ip>/
 ```
 
-**Pitfall: 400 Bad Request:** Some apps (OpenProject, nginx-based) validate the `Host` header. Use `-H 'Host: <configured_hostname>'` in curl requests. If the Host is a bare IP, pass it explicitly.
+**Pitfall: 400 Bad Request:** Some apps (OpenProject, nginx-based) validate the `Host` header. Use `-H 'Host: <configured_hostname>'` in HTTP-запрос к requests. If the Host is a bare IP, pass it explicitly.
 
 **Pitfall: 503 Service Unavailable on first run:** Docker apps often need time for database migrations on first startup (especially CMS/ERP apps). Wait 1-3 minutes before the first check. Check logs:
 ```bash
