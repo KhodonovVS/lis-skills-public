@@ -48,7 +48,7 @@
 
 ## Живая ветка в Forgejo
 
-Ветка не «упоминается», а создаётся: `POST https://<домен из окружения>/api/v1/repos/<owner>/<repo>/branches` с `{"new_branch_name": "b24/<id>-<слаг>", "old_branch_name": "main"}`, заголовок `Authorization: token <pass forgejo/vlas-token>`. `201` — создана, `409/already exists` — уже была (считать успехом), иначе писать в описании «не создана: <код>».
+Ветка не «упоминается», а создаётся: `POST https://<домен из окружения>/api/v1/repos/<owner>/<repo>/branches` с `{"new_branch_name": "b24/<id>-<слаг>", "old_branch_name": "main"}`, заголовок `Authorization: token <pass forgejo/заказчик-token>`. `201` — создана, `409/already exists` — уже была (считать успехом), иначе писать в описании «не создана: <код>».
 
 Репозиторий выбирать по ключевым словам задачи (ehlib → `MedicalGenomics/ehlib`, graphics32, devexpress, fastreport, ems → `ems-import`, сборка/jenkins → `build-config`), по умолчанию `MedicalGenomics/medicalgenomics`. Транслит: `а→a…я→ya`, затем `[^a-z0-9]+ → -`, обрезка 40 символов **с последующим `rstrip('-')`** — иначе имя ветки кончается дефисом.
 

@@ -279,7 +279,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File C:\Tools\utf8_convert.ps1 [-
 | `pascal` | `http://<адрес из окружения>/mcp` | pascal-dev v1.17.0 — отладка: `launch_app`, `screenshot_app`, `app_click`, `read_ide_errors`, `observe_ide`, `parse_form`, `build_dproj`, `check_syntax` |
 
 Авторизация `delphi`: `Authorization: Bearer <токен>` + `X-Workspace: Main`; токен — `/home/boss/.hermes/secrets/delphi_mcp.env`.
-Сервер лежит в `C:\Tools\DelphiLspMcp`, запускается задачей планировщика `DelphiLspMcp` (от `TEREMOK\boss`, -gui).
+Сервер лежит в `C:\Tools\DelphiLspMcp`, запускается задачей планировщика `DelphiLspMcp` (от `учётка домена`, -gui).
 **Только RAD Studio 13.2 (37.0)**: у 10.3 нет `DelphiLSP.exe`, сервер с ней не стартует — сборка 10.3 идёт через MSBuild/TestBuild.
 
 Правило BOSS: **формы, фреймы и data-модули — только в `.dfm`**, динамическое создание компонентов в коде запрещено.
@@ -513,7 +513,7 @@ foreach($pg in $xml.Project.PropertyGroup){ if($pg.DCC_UnitSearchPath -and $pg.D
 $xml.Save($p); "изменено: $n"
 ```
 
-Проверка — только полной сборкой (`rsvars.bat` + `MSBuild.exe registr.dproj /t:Build /p:Config=Release /p:Platform=Win32`), через WinRM-скрипт (pywinrm, ntlm, `TEREMOK\boss`): длинные интерактивные вызовы обрываются. Успех = `EXIT=0`, 0 ошибок, ~333 warning/hint, свежий `H:\medicalgenomics\Registr\Win32\Release\registr.exe` (~104 МБ).
+Проверка — только полной сборкой (`rsvars.bat` + `MSBuild.exe registr.dproj /t:Build /p:Config=Release /p:Platform=Win32`), через WinRM-скрипт (pywinrm, ntlm, `учётка домена`): длинные интерактивные вызовы обрываются. Успех = `EXIT=0`, 0 ошибок, ~333 warning/hint, свежий `H:\medicalgenomics\Registr\Win32\Release\registr.exe` (~104 МБ).
 
 ## Редактирование Delphi-файлов (legacy cp1251)
 
@@ -542,14 +542,14 @@ patch-инструмент работает на уровне байтов. Пр
 ### Адреса WORKST
 
 - Активный интерфейс — **<адрес из окружения>** (Ethernet 2): WinRM 5985 (после `Enable-PSRemoting`), RDP 3389 и SMB 445
-  (`C$`/`H$` рабочие: `smbclient //<адрес из окружения>/C$ -U "TEREMOK/VLAS%<pass pdc>"` — put/get файлов). **<адрес из окружения>** —
+  (`C$`/`H$` рабочие: `smbclient //<адрес из окружения>/C$ -U "организация/заказчик%<pass pdc>"` — put/get файлов). **<адрес из окружения>** —
   второй порт (плата MSI, WoL-MAC `D8:43:AE:4E:5B:A3`), может быть не подключён — не считать машину офлайн по нему.
-  Машина: MSI MS-7C94, Windows 11 Enterprise 26H1 (build 28000), домен TEREMOK.LOCAL; заходит `TEREMOK\VLAS` +
+  Машина: MSI MS-7C94, Windows 11 Enterprise 26H1 (build 28000), домен домен организации; заходит `организация\заказчик` +
   `pass pdc`; активация — MAK-ключ `pass windows/win11-enterprise-mak`. На .3 — MCP-сервер профиля `workst`
   (`http://<адрес из окружения>/mcp`, токен в `~/.hermes/profiles/workst/config.yaml`).
 - **Если 5985 закрыт после включения машины** (служба не стартанула) — включить удалённо по RPC через impacket:
   `PIP_USER=false pip install impacket` (глобальный pip.conf с `user='true'` иначе валит установку в venv),
-  затем `wmiexec.py 'TEREMOK.LOCAL/VLAS:<pass>@<адрес из окружения>' 'powershell -NoProfile -Command "Enable-PSRemoting -SkipNetworkProfileCheck -Force"'`;
+  затем `wmiexec.py 'домен организации/заказчик:<pass>@<адрес из окружения>' 'powershell -NoProfile -Command "Enable-PSRemoting -SkipNetworkProfileCheck -Force"'`;
   вывод может оборваться — проверять открытием 5985 (~1–2 мин).
 - DNS-имя `workst.teremok.local` → **<адрес из окружения>** — устарело (машины там нет).
 - Разбудить выключенную машину: WoL (`~/.hermes/scripts/wol.py`, MAC `D8:43:AE:4E:5B:A3`; либо с MikroTik

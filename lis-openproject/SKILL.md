@@ -3,17 +3,17 @@ name: lis-openproject
 description: "Use when работа с OpenProject (<домен из окружения>)."
 ---
 
-# OpenProject (<домен из окружения>) — ведение проектов BOSS × VLAS
+# OpenProject (<домен из окружения>) — ведение проектов BOSS × заказчик
 
 Community Edition 17.x в LXC на pve; снаружи — https://<домен из окружения> (NPM + Let's Encrypt).
 Проекты: **MARK MAIN** (разработка голосового управления: задачи/исследования/предложения) и далее другие.
 
 ## Доступы и токены
 
-- Аккаунты: `boss`, `vlas` (оба администраторы), `admin` (встроенный, force-change снят). Пароли: pass `op/openproject/{boss,vlas,admin}` + Vaultwarden «Создано Hermes».
+- Аккаунты: `boss`, `заказчик` (оба администраторы), `admin` (встроенный, force-change снят). Пароли: pass `op/openproject/{boss,заказчик,admin}` + Vaultwarden «Создано Hermes».
 - **APIv3 НЕ принимает basic-auth с логином/паролем** (даже при включённых токенах) — только `curl -u apikey:<токен>`. В скриптах: `OP_LOGIN=apikey OP_PASSWORD=<токен>`.
-- Токены: pass `op/openproject/api-token-{vlas,boss}` + Vaultwarden; первоисточник для моста — `/root/op-apitokens.txt` на CT170 (chmod 600, строки `login=opapi-...`).
-- Создание токена — только rails в контейнере (прямого ssh root→CT174 нет; ходить через PVE: `pct exec 174 -- docker exec openproject bash -lc 'cd /app && bundle exec rails runner "..."'`): `Token::API.create_and_return_value(User.find_by(login: %q{vlas}))` — печатает значение один раз.
+- Токены: pass `op/openproject/api-token-{заказчик,boss}` + Vaultwarden; первоисточник для моста — `/root/op-apitokens.txt` на CT170 (chmod 600, строки `login=opapi-...`).
+- Создание токена — только rails в контейнере (прямого ssh root→CT174 нет; ходить через PVE: `pct exec 174 -- docker exec openproject bash -lc 'cd /app && bundle exec rails runner "..."'`): `Token::API.create_and_return_value(User.find_by(login: %q{заказчик}))` — печатает значение один раз.
 - `api_tokens_enabled` в settings = true по умолчанию; админ-страница: Administration → API and webhooks.
 
 ## MCP-мост (управление из Hermes)
@@ -21,7 +21,7 @@ Community Edition 17.x в LXC на pve; снаружи — https://<домен �
 - Пакет `openproject-ce-mcp` (uv tool install; бинарь `~/.local/bin/openproject-ce-mcp`; CE, включается 16 тулов по флагам OPENPROJECT_ENABLE_*).
 - Регистрация скриптом `/home/boss/.hermes/scripts/op_mcp_setup.sh` (берёт токен, пишет ~/.hermes/config.yaml, тест `hermes mcp test openproject`).
 - Env-флаги: OPENPROJECT_BASE_URL, OPENPROJECT_API_TOKEN, OPENPROJECT_ENABLE_* (READ/WRITE по цепочкам; нам: WORK_PACKAGE_R/W, PROJECT_R/W, VERSION/BOARD/MEMBERSHIP_READ, METADATA_TOOLS, PERSONAL_READ).
-- Тулы видны как `mcp__openproject__*` (deferred-каталог; проверено в кроне: get_current_user → «VLAS Ops»). После подключения нужен внешний рестарт шлюза, чтобы тулы подхватили рабочие сессии (через сисадмина CT170, гвард запрещает изнутри; цепочка op-mcp-chain).
+- Тулы видны как `mcp__openproject__*` (deferred-каталог; проверено в кроне: get_current_user → «заказчик Ops»). После подключения нужен внешний рестарт шлюза, чтобы тулы подхватили рабочие сессии (через сисадмина CT170, гвард запрещает изнутри; цепочка op-mcp-chain).
 - `hermes mcp add --env` — ОДНА опция и список пар `KEY=VALUE` (не повторы `--env=`).
 - `hermes mcp add` в неинтерактиве спрашивает «Enable all N tools? [Y/n/select]»; без ответа = Cancelled (мост не создаётся) → подавать `printf 'Y\n' |` (учтено в op_mcp_setup.sh).
 
@@ -110,8 +110,8 @@ Feature  — задача конторы (родитель)
 
 ## Питфоллы
 
-- **«Ваша учётная запись не была активирована»**: `self_registration=2` (активация вручную админом). BOSS в такой ситуации почти всегда сам зарегистрировал ДУБЛЬ (типично с несуществующим адресом `boss@<домен из окружения>`) вместо входа в свою учётку `boss`. Действия: удалить дубль (`User.find_by(login: %q{...}).destroy`), проверить пару основной учётки `User.try_to_login` (пароль в rails runner передавать через `Base64.decode64(%q{...})` — иначе воюют кавычки), направить BOSS'а в Vaultwarden: организация TEREMOK → «op — openproject — boss».
-- Секреты не печатать; креды генерирует сисадмин, VLAS кладёт в pass+Vaultwarden (secret_to_bw.sh) и удаляет исходный файл.
+- **«Ваша учётная запись не была активирована»**: `self_registration=2` (активация вручную админом). BOSS в такой ситуации почти всегда сам зарегистрировал ДУБЛЬ (типично с несуществующим адресом `boss@<домен из окружения>`) вместо входа в свою учётку `boss`. Действия: удалить дубль (`User.find_by(login: %q{...}).destroy`), проверить пару основной учётки `User.try_to_login` (пароль в rails runner передавать через `Base64.decode64(%q{...})` — иначе воюют кавычки), направить BOSS'а в Vaultwarden: организация организация → «op — openproject — boss».
+- Секреты не печатать; креды генерирует сисадмин, заказчик кладёт в pass+Vaultwarden (secret_to_bw.sh) и удаляет исходный файл.
 - Пароли могут содержать «/»: креды-файлы парсить только по пробелам (`awk '{print $1}'` / `'{print $NF}'`); проверка пары — `User.try_to_login`. (op_finalize.sh раньше резал пароль по «/» — исправлено.)
 - op_finalize.sh идемпотентен: если файла кредов на CT170 уже нет, а pass `op/openproject/` заполнен — шаг 3 мягко пропускается («забраны ранее»), дальше идут проверки MARK MAIN/токенов/внешняя. Повторный прогон даёт «создано 0, пропущено 33» и FINALIZE: DONE.
 - API-списки work_packages (проектный и глобальный) по умолчанию НЕ отдают Closed — полный счёт смотреть по БД, GET /work_packages/{id} или доп. фильтром `filters=[{"status":{"operator":"c","values":[]}}]` (URL-encoded). Любой дедуп/повторный прогон обязан учитывать Closed, иначе дублирует закрытые задачи (op_markmain.py исправлен: тянет и закрытые). Даты API (createdAt) — UTC (MSK = +3).

@@ -14,7 +14,7 @@ metadata:
 
 Класс задачи: поднять/обслуживать стендовый или учебный сервер СУБД как QEMU-VM на парке (обычно узел dbase <адрес из окружения>). Раскладка BOSS: СИСТЕМНЫЙ диск — на SATA-пул (ctpool), ДАННЫЕ — отдельным zvol на NVMe-пуле (projects). Стенды нужны и для практики (Oracle осваивается BOSS'ом), поэтому к стенду прилагаются учебные схемы и удобный клиентский доступ.
 
-Строит агент-сисадмин (CT170) прогонами; VLAS ставит ТЗ, принимает по следам (живые пробы портов/запросов), секреты переносит в pass + Vaultwarden сам. Формат ТЗ и серии прогонов — скилл `agent-helper-fleet`.
+Строит агент-сисадмин (CT170) прогонами; заказчик ставит ТЗ, принимает по следам (живые пробы портов/запросов), секреты переносит в pass + Vaultwarden сам. Формат ТЗ и серии прогонов — скилл `agent-helper-fleet`.
 
 ## Порядок (общий для любого стенда)
 1. **Препроверка**: id и IP свободны на ОБОИХ узлах (`pct list`, `qm list`, ping); сторадж данных зарегистрирован (`pvesm status`; при отсутствии — `pvesm add zfspool projects -pool projects`).
@@ -37,11 +37,11 @@ metadata:
    Сохранение образа по запросу («сохрани образ») — тремя слоями: снапшот с осмысленным именем (`qm snapshot`, работает
    на живой VM) + полный бэкап ФОНОМ (`systemd-run --unit=vzdump-<id> vzdump <id> --storage pbs-main --mode snapshot`) +
    копия исходного установочного ISO на ISOTEMPLATE (см. «Наши носители»).
-4. **Секреты** — только файлами на CT агента (0600) + в отчёт имена; VLAS переносит в pass (`stend-<сvc>/*`) и Vaultwarden (TEREMOK/«Создано Hermes»; рабочий путь — `bw` CLI: unlock → `bw encode` → `bw create item`, см. `password-vault`). При переносе пайпами сверять `pass show <имя> | wc -c` — пустой stdin у `pass insert -m -f` создаёт ПУСТУЮ запись молча (rc=0), а потом `psql`/`ssh` «зависает» на интерактивном запросе пароля; локальные временные копии секретов удалять после переноса.
+4. **Секреты** — только файлами на CT агента (0600) + в отчёт имена; заказчик переносит в pass (`stend-<сvc>/*`) и Vaultwarden (организация/«Создано Hermes»; рабочий путь — `bw` CLI: unlock → `bw encode` → `bw create item`, см. `password-vault`). При переносе пайпами сверять `pass show <имя> | wc -c` — пустой stdin у `pass insert -m -f` создаёт ПУСТУЮ запись молча (rc=0), а потом `psql`/`ssh` «зависает» на интерактивном запросе пароля; локальные временные копии секретов удалять после переноса.
 5. **Приёмка**: порт СУБД открыт СНАРУЖИ (проба `/dev/tcp` с dbase), живой запрос изнутри (sqlcmd/sqlplus/psql), версия/редакция из SELECT, данные на отдельном томе, автостарт доказан ПЕРЕЗАГРУЗКОЙ VM.
 
 ## Наши носители — НЕ качать наугад
-- **ISOTEMPLATE** (NFS <адрес из окружения>:/mnt/STORAGE/ISOTEMPLATE): готовый Windows `iso/WinSrv2025_ru-RU_Hermes-VM.iso` (unattend: домен TEREMOK.LOCAL, virtio, qemu-ga, WinRM/RDP, firewall off), `template/iso/ubuntu-26.04-live-server-amd64.iso`, virtio-win, Win11-образы.
+- **ISOTEMPLATE** (NFS <адрес из окружения>:/mnt/STORAGE/ISOTEMPLATE): готовый Windows `iso/WinSrv2025_ru-RU_Hermes-VM.iso` (unattend: домен домен организации, virtio, qemu-ga, WinRM/RDP, firewall off), `template/iso/ubuntu-26.04-live-server-amd64.iso`, virtio-win, Win11-образы.
   - PVE листит ISO NFS-стора только из `<path>/template/iso/`; положенное в `<path>/iso/` PVE НЕ видит.
   - Собранные локально ISO (unattend-образы) на pve лежат в `/WINPOOL/iso` (storage WINISO = dir `/WINPOOL/iso`);
     долговечная копия — на ISOTEMPLATE. Копия 8-ГБ идёт минуты: запускать ФОНОМ (`systemd-run --unit=iso-copy cp …`),
