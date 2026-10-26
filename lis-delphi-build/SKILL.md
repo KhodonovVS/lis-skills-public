@@ -551,7 +551,7 @@ patch-инструмент работает на уровне байтов. Пр
   `PIP_USER=false pip install impacket` (глобальный pip.conf с `user='true'` иначе валит установку в venv),
   затем `wmiexec.py 'домен организации/заказчик:<pass>@<адрес из окружения>' 'powershell -NoProfile -Command "Enable-PSRemoting -SkipNetworkProfileCheck -Force"'`;
   вывод может оборваться — проверять открытием 5985 (~1–2 мин).
-- DNS-имя `workst.teremok.local` → **<адрес из окружения>** — устарело (машины там нет).
+- DNS-имя `workst.организация.local` → **<адрес из окружения>** — устарело (машины там нет).
 - Разбудить выключенную машину: WoL (`~/.hermes/scripts/wol.py`, MAC `D8:43:AE:4E:5B:A3`; либо с MikroTik
   `/tool wol interface=BRIDGE-LAN mac=...` — изнутри её L2); MAC/адреса сверять в DHCP-lease MikroTik
   (`/ip dhcp-server lease print detail where host-name~"WORKST"`). Если за ~3–5 мин не встала — питание снято

@@ -68,7 +68,7 @@
 - n8n: пн-пт, 09:00/10:30/12:00/13:30/15:00/16:30/18:00 МСК (два cron-триггера: `0 9,12,15,18 * * 1-5` и `30 10,13,16 * * 1-5`), ночью и в выходные не проверять. `GET /check` → IF `tasks > 0` → `POST /run?mode=incremental`.
 - Хук: `b24_op_hook.py` (systemd `b24-op-hook`, :8099, секрет `~/.hermes/secrets/b24_op_secret`), эндпоинты `GET /health`, `GET /check`, `POST /run?mode=incremental|all-open|&task=<id>`.
 - Ручной: `--task <id>`, `--all-open`, `--dry-run`.
-- Дайджест BOSS'у: `b24_digest.py` → `@TeremokHomeBOT` (chat 219004331), cron `5 9 * * 1-5`: просрочки, ≤3 дней, новые за сутки, задачи без техпроекта.
+- Дайджест BOSS'у: `b24_digest.py` → `@организацияHomeBOT` (chat 219004331), cron `5 9 * * 1-5`: просрочки, ≤3 дней, новые за сутки, задачи без техпроекта.
 
 ## Чего не делать
 
